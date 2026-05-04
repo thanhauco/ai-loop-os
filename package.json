@@ -5,13 +5,15 @@
   "description": "Production-grade autonomous software engineering platform built on a loop architecture.",
   "workspaces": [
     "apps/api",
+    "apps/gateway",
     "apps/ui"
   ],
   "scripts": {
-    "dev": "concurrently -n api,ui -c blue,magenta \"npm run dev -w @loop-os/api\" \"npm run dev -w @loop-os/ui\"",
+    "dev": "concurrently -n api,gateway,ui -c blue,green,magenta \"npm run dev -w @loop-os/api\" \"npm run dev -w @loop-os/gateway\" \"npm run dev -w @loop-os/ui\"",
     "dev:api": "npm run dev -w @loop-os/api",
+    "dev:gateway": "npm run dev -w @loop-os/gateway",
     "dev:ui": "npm run dev -w @loop-os/ui",
-    "build": "npm run build -w @loop-os/api && npm run build -w @loop-os/ui",
+    "build": "npm run build -w @loop-os/api && npm run build -w @loop-os/gateway && npm run build -w @loop-os/ui",
     "start": "npm run start -w @loop-os/api"
   },
   "devDependencies": {
