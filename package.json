@@ -6,14 +6,17 @@
   "workspaces": [
     "apps/api",
     "apps/gateway",
-    "apps/ui"
+    "apps/ui",
+    "apps/worker"
   ],
   "scripts": {
     "dev": "concurrently -n api,gateway,ui -c blue,green,magenta \"npm run dev -w @loop-os/api\" \"npm run dev -w @loop-os/gateway\" \"npm run dev -w @loop-os/ui\"",
+    "dev:all": "concurrently -n api,gateway,worker,ui -c blue,green,yellow,magenta \"npm run dev -w @loop-os/api\" \"npm run dev -w @loop-os/gateway\" \"npm run dev -w @loop-os/worker\" \"npm run dev -w @loop-os/ui\"",
     "dev:api": "npm run dev -w @loop-os/api",
     "dev:gateway": "npm run dev -w @loop-os/gateway",
     "dev:ui": "npm run dev -w @loop-os/ui",
-    "build": "npm run build -w @loop-os/api && npm run build -w @loop-os/gateway && npm run build -w @loop-os/ui",
+    "dev:worker": "npm run dev -w @loop-os/worker",
+    "build": "npm run build -w @loop-os/api && npm run build -w @loop-os/gateway && npm run build -w @loop-os/ui && npm run build -w @loop-os/worker",
     "start": "npm run start -w @loop-os/api"
   },
   "devDependencies": {
