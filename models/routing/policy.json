@@ -1,0 +1,15 @@
+{
+  "version": "0.1.0",
+  "defaultProvider": "mock-local-loop-model",
+  "routingRules": [
+    { "condition": "security-critical", "model": "security-reviewed-frontier-model", "requiresApproval": true },
+    { "condition": "large-context-research", "model": "long-context-research-model", "requiresApproval": false },
+    { "condition": "low-latency-ui", "model": "small-fast-model", "requiresApproval": false },
+    { "condition": "local-private-data", "model": "local-llama", "requiresApproval": false }
+  ],
+  "budgets": {
+    "maxTokensPerRun": 120000,
+    "maxCostUsdPerRun": 5,
+    "latencyBudgetMs": 120000
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "executionOrder": [
+    "planner",
+    "research",
+    "coding",
+    "evaluation",
+    "verification",
+    "reflection",
+    "retry",
+    "security",
+    "compliance",
+    "memory",
+    "deployment",
+    "monitoring"
+  ],
+  "loops": {
+    "planner": { "ownerAgent": "planner_agent", "qualityGate": "tasks.length > 0" },
+    "research": { "ownerAgent": "researcher_agent", "qualityGate": "facts.length > 0" },
+    "coding": { "ownerAgent": "coder_agent", "qualityGate": "filePlan.length > 0" },
+    "evaluation": { "ownerAgent": "reviewer_agent", "qualityGate": "quality >= 85" },
+    "verification": { "ownerAgent": "qa_agent", "qualityGate": "all checks passed" },
+    "reflection": { "ownerAgent": "architect_agent", "qualityGate": "rootCause documented" },
+    "retry": { "ownerAgent": "planner_agent", "qualityGate": "strategy selected" },
+    "security": { "ownerAgent": "security_agent", "qualityGate": "no critical findings" },
+    "compliance": { "ownerAgent": "compliance_agent", "qualityGate": "evidence generated" },
+    "memory": { "ownerAgent": "architect_agent", "qualityGate": "records written" },
+    "deployment": { "ownerAgent": "deployment_agent", "qualityGate": "rollback plan exists" },
+    "monitoring": { "ownerAgent": "qa_agent", "qualityGate": "metrics emitted" }
+  }
+}

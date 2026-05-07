@@ -1,0 +1,15 @@
+name: bug_fix
+version: 0.1.0
+entry_loop: planner
+loops:
+  - planner
+  - research
+  - coding
+  - verification
+  - evaluation
+  - reflection
+  - memory
+  - monitoring
+quality_gates:
+  reproduce_before_fix: true
+  regression_tests_required: true

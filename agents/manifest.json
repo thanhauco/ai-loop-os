@@ -1,0 +1,14 @@
+{
+  "version": "0.1.0",
+  "agents": [
+    { "id": "planner_agent", "role": "Goal decomposition and task sequencing", "tools": ["workflow_registry", "memory_query"] },
+    { "id": "researcher_agent", "role": "Fact gathering and citation synthesis", "tools": ["search", "rag", "browser"] },
+    { "id": "coder_agent", "role": "Implementation planning and code generation", "tools": ["terminal", "github"] },
+    { "id": "reviewer_agent", "role": "Quality evaluation and maintainability review", "tools": ["evaluation_suite"] },
+    { "id": "architect_agent", "role": "Architecture critique and system evolution", "tools": ["knowledge_graph", "memory_query"] },
+    { "id": "security_agent", "role": "Security scanning and mitigation planning", "tools": ["semgrep", "trivy", "owasp"] },
+    { "id": "compliance_agent", "role": "Compliance evidence and approval mapping", "tools": ["policy_registry", "audit_log"] },
+    { "id": "qa_agent", "role": "Verification, testing, and monitoring checks", "tools": ["terminal", "observability"] },
+    { "id": "deployment_agent", "role": "Release planning, rollout, and rollback", "tools": ["docker", "kubernetes", "argocd"] }
+  ]
+}

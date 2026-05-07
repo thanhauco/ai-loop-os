@@ -1,0 +1,15 @@
+{
+  "version": "0.1.0",
+  "suites": {
+    "code_quality": ["correctness", "maintainability", "readability", "complexity"],
+    "hallucination": ["citation_grounding", "source_agreement", "uncertainty_calibration"],
+    "architecture": ["modularity", "provider_boundaries", "failure_modes"],
+    "security": ["owasp", "dependency_risk", "secret_handling"],
+    "performance": ["latency_budget", "token_budget", "memory_pressure"]
+  },
+  "minimumScores": {
+    "default": 85,
+    "security": 95,
+    "compliance": 90
+  }
+}

@@ -1,0 +1,22 @@
+name: build_feature
+version: 0.1.0
+entry_loop: planner
+loops:
+  - planner
+  - research
+  - coding
+  - evaluation
+  - verification
+  - reflection
+  - retry
+  - security
+  - compliance
+  - memory
+  - deployment
+  - monitoring
+approval_gates:
+  - production_deployment
+  - regulated_data_access
+quality_gates:
+  minimum_quality_score: 85
+  block_on_critical_security: true

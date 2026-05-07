@@ -1,0 +1,18 @@
+{
+  "version": "0.1.0",
+  "tools": [
+    { "id": "github", "category": "source-control", "approval": "required-for-write" },
+    { "id": "terminal", "category": "execution", "approval": "policy-gated" },
+    { "id": "docker", "category": "build", "approval": "policy-gated" },
+    { "id": "kubernetes", "category": "deployment", "approval": "required-for-write" },
+    { "id": "browser", "category": "research", "approval": "read-only" },
+    { "id": "search", "category": "research", "approval": "read-only" },
+    { "id": "rag", "category": "knowledge", "approval": "read-only" },
+    { "id": "mcp", "category": "tool-discovery", "approval": "policy-gated" }
+  ],
+  "selectionPolicy": {
+    "preferStructuredApis": true,
+    "recordInputsAndOutputs": true,
+    "blockSecretsInLogs": true
+  }
+}

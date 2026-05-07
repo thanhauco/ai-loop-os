@@ -1,0 +1,19 @@
+name: release
+version: 0.1.0
+entry_loop: verification
+loops:
+  - verification
+  - evaluation
+  - security
+  - compliance
+  - deployment
+  - monitoring
+  - reflection
+  - memory
+approval_gates:
+  - deployment_approval
+  - rollback_plan_acceptance
+quality_gates:
+  build_required: true
+  smoke_test_required: true
+  rollback_required: true

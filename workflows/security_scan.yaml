@@ -1,0 +1,13 @@
+name: security_scan
+version: 0.1.0
+entry_loop: security
+loops:
+  - research
+  - security
+  - verification
+  - compliance
+  - reflection
+  - memory
+quality_gates:
+  block_on_critical_security: true
+  require_mitigation_for_high: true

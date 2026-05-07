@@ -1,0 +1,27 @@
+{
+  "version": "0.1.0",
+  "nodes": [
+    "Run",
+    "Goal",
+    "Loop",
+    "Agent",
+    "Tool",
+    "Artifact",
+    "MemoryRecord",
+    "ComplianceFramework",
+    "SecurityFinding",
+    "Deployment"
+  ],
+  "relationships": [
+    "RUN_HAS_GOAL",
+    "RUN_EXECUTED_LOOP",
+    "LOOP_USED_AGENT",
+    "AGENT_SELECTED_TOOL",
+    "LOOP_PRODUCED_ARTIFACT",
+    "ARTIFACT_SUPPORTS_EVIDENCE",
+    "RUN_CREATED_MEMORY",
+    "FINDING_BLOCKS_DEPLOYMENT",
+    "DEPLOYMENT_REQUIRES_APPROVAL"
+  ],
+  "indexes": ["Run.id", "Goal.hash", "Artifact.kind", "ComplianceFramework.name"]
+}

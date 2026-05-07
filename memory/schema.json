@@ -1,0 +1,15 @@
+{
+  "version": "0.1.0",
+  "stores": {
+    "episodic": { "backend": "postgresql", "purpose": "Run outcomes, task history, and success/failure traces" },
+    "semantic": { "backend": "postgresql", "purpose": "Durable facts, concepts, standards, and constraints" },
+    "procedural": { "backend": "postgresql", "purpose": "Reusable workflows, fixes, and playbooks" },
+    "graph": { "backend": "neo4j", "purpose": "Entities, relationships, ownership, dependencies, and evidence lineage" },
+    "vector": { "backend": "qdrant", "purpose": "Embeddings for retrieval, context assembly, and similarity search" }
+  },
+  "retention": {
+    "defaultDays": 365,
+    "regulatedData": "policy-controlled",
+    "deletionWorkflow": "human-approval-loop"
+  }
+}

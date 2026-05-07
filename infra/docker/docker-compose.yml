@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    environment:
+      PORT: 4000
+    ports:
+      - "4000:4000"
+
+  gateway:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.gateway
+    environment:
+      GATEWAY_PORT: 4100
+      API_BASE_URL: http://api:4000
+    ports:
+      - "4100:4100"
+    depends_on:
+      - api

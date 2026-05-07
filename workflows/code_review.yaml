@@ -1,0 +1,14 @@
+name: code_review
+version: 0.1.0
+entry_loop: research
+loops:
+  - research
+  - evaluation
+  - verification
+  - security
+  - compliance
+  - reflection
+  - memory
+quality_gates:
+  findings_first: true
+  require_file_references: true

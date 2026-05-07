@@ -1,0 +1,8 @@
+{
+  "project": "ai-loop-os",
+  "traces": {
+    "runTraceName": "loop-run",
+    "spanKinds": ["orchestrator", "loop", "agent", "tool", "model", "memory"]
+  },
+  "metrics": ["tokens", "latency", "qualityScore", "retryCount", "securityFindingCount"]
+}
