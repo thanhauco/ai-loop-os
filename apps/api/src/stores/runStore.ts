@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import type { LoopName, LoopRecord, Run, RunRequest } from "../types.js";
+import { JsonFileStore } from "./jsonFileStore.js";
 
 export const loopOrder: Array<{ name: LoopName; title: string }> = [
   { name: "planner", title: "Planning Loop" },
@@ -18,6 +19,18 @@ export const loopOrder: Array<{ name: LoopName; title: string }> = [
 
 export class RunStore {
   private readonly runs = new Map<string, Run>();
+  private readonly persistence?: JsonFileStore<Run[]>;
+
+  constructor(filePath?: string) {
+    if (!filePath) {
+      return;
+    }
+
+    this.persistence = new JsonFileStore<Run[]>(filePath, []);
+    for (const run of this.persistence.read()) {
+      this.runs.set(run.id, run);
+    }
+  }
 
   create(request: RunRequest): Run {
     const now = Date.now();
@@ -40,6 +53,7 @@ export class RunStore {
     } satisfies Run;
 
     this.runs.set(run.id, run);
+    this.persist();
     return run;
   }
 
@@ -54,6 +68,11 @@ export class RunStore {
   save(run: Run): Run {
     run.updatedAt = Date.now();
     this.runs.set(run.id, run);
+    this.persist();
     return run;
+  }
+
+  private persist(): void {
+    this.persistence?.write(this.list());
   }
 }

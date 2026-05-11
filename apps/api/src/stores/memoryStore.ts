@@ -1,8 +1,19 @@
 import { nanoid } from "nanoid";
 import type { MemoryRecord, MemoryStore } from "../types.js";
+import { JsonFileStore } from "./jsonFileStore.js";
 
 export class InMemoryMemoryStore implements MemoryStore {
   private readonly records: MemoryRecord[] = [];
+  private readonly persistence?: JsonFileStore<MemoryRecord[]>;
+
+  constructor(filePath?: string) {
+    if (!filePath) {
+      return;
+    }
+
+    this.persistence = new JsonFileStore<MemoryRecord[]>(filePath, []);
+    this.records.push(...this.persistence.read());
+  }
 
   save(record: Omit<MemoryRecord, "id" | "createdAt">): MemoryRecord {
     const saved = {
@@ -12,6 +23,7 @@ export class InMemoryMemoryStore implements MemoryStore {
     } satisfies MemoryRecord;
 
     this.records.unshift(saved);
+    this.persist();
     return saved;
   }
 
@@ -21,5 +33,9 @@ export class InMemoryMemoryStore implements MemoryStore {
     }
 
     return this.records.filter((record) => record.kind === kind);
+  }
+
+  private persist(): void {
+    this.persistence?.write(this.records);
   }
 }
