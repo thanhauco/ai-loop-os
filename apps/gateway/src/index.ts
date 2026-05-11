@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import { Readable } from "node:stream";
 
 const app = express();
 const port = Number(process.env.GATEWAY_PORT ?? 4100);
@@ -47,6 +48,12 @@ app.use("/api", async (request, response) => {
     const contentType = upstreamResponse.headers.get("content-type");
     if (contentType) {
       response.setHeader("content-type", contentType);
+    }
+
+    if (contentType?.includes("text/event-stream") && upstreamResponse.body) {
+      response.status(upstreamResponse.status);
+      Readable.fromWeb(upstreamResponse.body as unknown as Parameters<typeof Readable.fromWeb>[0]).pipe(response);
+      return;
     }
 
     response.status(upstreamResponse.status).send(await upstreamResponse.text());

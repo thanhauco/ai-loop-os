@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { join } from "node:path";
+import { RunEventBus } from "./events/runEvents.js";
 import { loopRegistry } from "./loops/registry.js";
 import { Orchestrator } from "./orchestrator.js";
 import { MockLlmProvider } from "./providers/mockLlmProvider.js";
@@ -14,7 +15,8 @@ const dataDir = process.env.DATA_DIR ?? join(process.cwd(), ".data");
 const runs = new RunStore(join(dataDir, "runs.json"));
 const memory = new InMemoryMemoryStore(join(dataDir, "memory.json"));
 const llm = new MockLlmProvider();
-const orchestrator = new Orchestrator(runs, memory, llm);
+const runEvents = new RunEventBus();
+const orchestrator = new Orchestrator(runs, memory, llm, (run) => runEvents.publish(run));
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
@@ -47,6 +49,7 @@ app.post("/api/runs", (request, response) => {
   }
 
   const run = runs.create(body);
+  runEvents.publish(run);
   void orchestrator.execute(run.id);
 
   response.status(202).json(run);
@@ -61,6 +64,37 @@ app.get("/api/runs/:id", (request, response) => {
   }
 
   response.json(run);
+});
+
+app.get("/api/runs/:id/events", (request, response) => {
+  const run = runs.get(request.params.id);
+
+  if (!run) {
+    response.status(404).json({ error: "Run not found." });
+    return;
+  }
+
+  response.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no"
+  });
+
+  const send = (nextRun: typeof run) => {
+    response.write(`event: run\n`);
+    response.write(`data: ${JSON.stringify(nextRun)}\n\n`);
+  };
+
+  send(run);
+  const unsubscribe = runEvents.subscribe(run.id, send);
+  const heartbeat = setInterval(() => response.write(`: heartbeat\n\n`), 15000);
+
+  request.on("close", () => {
+    clearInterval(heartbeat);
+    unsubscribe();
+    response.end();
+  });
 });
 
 app.get("/api/memory", (request, response) => {

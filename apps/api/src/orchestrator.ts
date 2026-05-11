@@ -1,6 +1,7 @@
 import { loopRegistry } from "./loops/registry.js";
 import type { LlmProvider, LoopName, MemoryStore, RunContext } from "./types.js";
 import type { RunStore } from "./stores/runStore.js";
+import type { Run } from "./types.js";
 
 const loopPauseMs = 140;
 
@@ -12,7 +13,8 @@ export class Orchestrator {
   constructor(
     private readonly runs: RunStore,
     private readonly memory: MemoryStore,
-    private readonly llm: LlmProvider
+    private readonly llm: LlmProvider,
+    private readonly onRunUpdated?: (run: Run) => void
   ) {}
 
   async execute(runId: string): Promise<void> {
@@ -23,7 +25,7 @@ export class Orchestrator {
     }
 
     run.status = "running";
-    this.runs.save(run);
+    this.save(run);
 
     const emit: RunContext["emit"] = (loopName: LoopName, line: string) => {
       const loop = run.loops.find((candidate) => candidate.name === loopName);
@@ -32,7 +34,7 @@ export class Orchestrator {
       }
 
       loop.logs.push(`${new Date().toISOString()} ${line}`);
-      this.runs.save(run);
+      this.save(run);
     };
 
     const context = {
@@ -51,7 +53,7 @@ export class Orchestrator {
 
         loop.status = "running";
         loop.startedAt = Date.now();
-        this.runs.save(run);
+        this.save(run);
 
         const result = await definition.execute(context);
         loop.status = "passed";
@@ -64,12 +66,12 @@ export class Orchestrator {
           run.qualityScore = result.qualityScore;
         }
 
-        this.runs.save(run);
+        this.save(run);
         await sleep(loopPauseMs);
       }
 
       run.status = "succeeded";
-      this.runs.save(run);
+      this.save(run);
     } catch (error) {
       const runningLoop = run.loops.find((loop) => loop.status === "running");
       if (runningLoop) {
@@ -79,7 +81,12 @@ export class Orchestrator {
       }
 
       run.status = "failed";
-      this.runs.save(run);
+      this.save(run);
     }
+  }
+
+  private save(run: Run): void {
+    this.runs.save(run);
+    this.onRunUpdated?.(run);
   }
 }

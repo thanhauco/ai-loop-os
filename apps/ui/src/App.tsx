@@ -134,11 +134,29 @@ function App() {
       return;
     }
 
-    const interval = window.setInterval(() => {
-      void refresh(activeRun.id).catch((caught) => setError(caught instanceof Error ? caught.message : "Refresh failed"));
-    }, 800);
+    const events = new EventSource(`/api/runs/${activeRun.id}/events`);
 
-    return () => window.clearInterval(interval);
+    events.addEventListener("run", (event) => {
+      const nextRun = JSON.parse(event.data) as Run;
+      setActiveRun(nextRun);
+      setRuns((current) => {
+        const withoutRun = current.filter((run) => run.id !== nextRun.id);
+        return [nextRun, ...withoutRun].sort((left, right) => right.createdAt - left.createdAt);
+      });
+      setSelectedLoop((previous) => nextRun.loops.some((loop) => loop.name === previous) ? previous : nextRun.loops[0]?.name ?? "planner");
+
+      if (!["queued", "running"].includes(nextRun.status)) {
+        void refresh(nextRun.id).catch((caught) => setError(caught instanceof Error ? caught.message : "Refresh failed"));
+        events.close();
+      }
+    });
+
+    events.onerror = () => {
+      events.close();
+      void refresh(activeRun.id).catch((caught) => setError(caught instanceof Error ? caught.message : "Refresh failed"));
+    };
+
+    return () => events.close();
   }, [activeRun?.id, activeRun?.status]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
