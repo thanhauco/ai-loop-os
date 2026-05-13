@@ -32,9 +32,14 @@ export class RunStore {
     }
   }
 
-  create(request: RunRequest): Run {
+  create(request: RunRequest, options?: { workflowName?: string; loopNames?: LoopName[] }): Run {
     const now = Date.now();
-    const loops: LoopRecord[] = loopOrder.map((loop) => ({
+    const loopTemplates = new Map(loopOrder.map((loop) => [loop.name, loop]));
+    const selectedLoops = options?.loopNames?.length
+      ? options.loopNames.map((loopName) => loopTemplates.get(loopName)).filter((loop): loop is { name: LoopName; title: string } => Boolean(loop))
+      : loopOrder;
+
+    const loops: LoopRecord[] = selectedLoops.map((loop) => ({
       ...loop,
       status: "pending",
       logs: []
@@ -44,6 +49,7 @@ export class RunStore {
       id: nanoid(),
       goal: request.goal.trim(),
       status: "queued",
+      workflow: options?.workflowName ?? request.workflow ?? "build_feature",
       createdAt: now,
       updatedAt: now,
       compliance: request.compliance?.length ? request.compliance : ["SOC2"],

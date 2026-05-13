@@ -33,6 +33,8 @@ export type RunStatus = "queued" | "running" | "succeeded" | "failed";
 
 export interface RunRequest {
   goal: string;
+  /** Workflow template used to select the loop sequence. */
+  workflow?: string;
   /** Optional compliance frameworks to enforce. */
   compliance?: string[];
   /** Maximum retry attempts for the coding loop. */
@@ -43,6 +45,7 @@ export interface Run {
   id: string;
   goal: string;
   status: RunStatus;
+  workflow: string;
   createdAt: number;
   updatedAt: number;
   compliance: string[];
@@ -52,6 +55,15 @@ export interface Run {
   artifacts: Record<string, unknown>;
   /** Overall quality score 0-100. */
   qualityScore?: number;
+}
+
+export interface WorkflowDefinition {
+  name: string;
+  title: string;
+  description: string;
+  loops: LoopName[];
+  approvalGates?: string[];
+  qualityGates: Record<string, unknown>;
 }
 
 export interface RunContext {

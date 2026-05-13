@@ -8,6 +8,7 @@ import { MockLlmProvider } from "./providers/mockLlmProvider.js";
 import { InMemoryMemoryStore } from "./stores/memoryStore.js";
 import { RunStore } from "./stores/runStore.js";
 import type { RunRequest } from "./types.js";
+import { findWorkflow, workflowRegistry } from "./workflows/registry.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -36,6 +37,10 @@ app.get("/api/loops", (_request, response) => {
   );
 });
 
+app.get("/api/workflows", (_request, response) => {
+  response.json(workflowRegistry);
+});
+
 app.get("/api/runs", (_request, response) => {
   response.json(runs.list());
 });
@@ -48,7 +53,13 @@ app.post("/api/runs", (request, response) => {
     return;
   }
 
-  const run = runs.create(body);
+  if (body.workflow && !workflowRegistry.some((workflow) => workflow.name === body.workflow)) {
+    response.status(400).json({ error: "Unknown workflow." });
+    return;
+  }
+
+  const workflow = findWorkflow(body.workflow);
+  const run = runs.create(body, { workflowName: workflow.name, loopNames: workflow.loops });
   runEvents.publish(run);
   void orchestrator.execute(run.id);
 
