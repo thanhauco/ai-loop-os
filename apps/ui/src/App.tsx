@@ -19,6 +19,7 @@ type Run = {
   id: string;
   goal: string;
   status: RunStatus;
+  workflow?: string;
   createdAt: number;
   updatedAt: number;
   compliance: string[];
@@ -34,6 +35,15 @@ type MemoryRecord = {
   runId: string;
   data: Record<string, unknown>;
   createdAt: number;
+};
+
+type WorkflowDefinition = {
+  name: string;
+  title: string;
+  description: string;
+  loops: string[];
+  approvalGates?: string[];
+  qualityGates: Record<string, unknown>;
 };
 
 const frameworks = ["SOC2", "HIPAA", "GDPR", "PCI-DSS", "ISO27001"];
@@ -91,6 +101,8 @@ function JsonBlock({ value }: { value: unknown }) {
 function App() {
   const [goal, setGoal] = useState(defaultGoal);
   const [selectedCompliance, setSelectedCompliance] = useState<string[]>(["HIPAA", "SOC2"]);
+  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState("build_feature");
   const [maxRetries, setMaxRetries] = useState(2);
   const [activeRun, setActiveRun] = useState<Run | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
@@ -107,6 +119,7 @@ function App() {
   const completedLoops = activeRun?.loops.filter((loop) => loop.status === "passed").length ?? 0;
   const totalLoops = activeRun?.loops.length ?? 0;
   const progress = totalLoops ? Math.round((completedLoops / totalLoops) * 100) : 0;
+  const currentWorkflow = workflows.find((workflow) => workflow.name === selectedWorkflow);
 
   async function refresh(runId?: string) {
     const [nextRuns, nextMemory] = await Promise.all([
@@ -127,6 +140,12 @@ function App() {
 
   useEffect(() => {
     void refresh();
+    void api<WorkflowDefinition[]>("/api/workflows")
+      .then((nextWorkflows) => {
+        setWorkflows(nextWorkflows);
+        setSelectedWorkflow((current) => nextWorkflows.some((workflow) => workflow.name === current) ? current : nextWorkflows[0]?.name ?? "build_feature");
+      })
+      .catch((caught) => setError(caught instanceof Error ? caught.message : "Workflow load failed"));
   }, []);
 
   useEffect(() => {
@@ -167,7 +186,7 @@ function App() {
     try {
       const run = await api<Run>("/api/runs", {
         method: "POST",
-        body: JSON.stringify({ goal, compliance: selectedCompliance, maxRetries })
+        body: JSON.stringify({ goal, workflow: selectedWorkflow, compliance: selectedCompliance, maxRetries })
       });
       setActiveRun(run);
       setSelectedLoop(run.loops[0]?.name ?? "planner");
@@ -212,6 +231,22 @@ function App() {
             <textarea value={goal} onChange={(event) => setGoal(event.target.value)} rows={6} />
           </label>
 
+          <label className="field">
+            <span>Workflow</span>
+            <select value={selectedWorkflow} onChange={(event) => setSelectedWorkflow(event.target.value)}>
+              {workflows.map((workflow) => (
+                <option key={workflow.name} value={workflow.name}>
+                  {workflow.title}
+                </option>
+              ))}
+            </select>
+            {currentWorkflow ? (
+              <small className="field-help">
+                {currentWorkflow.description} {currentWorkflow.loops.length} loops.
+              </small>
+            ) : null}
+          </label>
+
           <fieldset className="frameworks">
             <legend>Compliance</legend>
             <div className="toggle-grid">
@@ -254,7 +289,7 @@ function App() {
                 <Activity size={20} aria-hidden="true" />
                 <h2>Loop Runtime</h2>
               </div>
-              <p>{activeRun ? activeRun.goal : "No run yet"}</p>
+              <p>{activeRun ? `${activeRun.goal} • ${activeRun.workflow ?? "build_feature"}` : "No run yet"}</p>
             </div>
             <div className="score-box">
               <span>Quality</span>
