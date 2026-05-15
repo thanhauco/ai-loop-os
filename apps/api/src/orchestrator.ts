@@ -45,10 +45,42 @@ export class Orchestrator {
     } satisfies RunContext;
 
     try {
-      for (const definition of loopRegistry) {
-        const loop = run.loops.find((candidate) => candidate.name === definition.name);
-        if (!loop) {
+      for (const loop of run.loops) {
+        const definition = loopRegistry.find((candidate) => candidate.name === loop.name);
+        if (!definition || loop.status === "passed" || loop.status === "skipped") {
           continue;
+        }
+
+        if (definition.name === "human_approval" && run.approval.status === "pending") {
+          loop.status = "running";
+          loop.startedAt ??= Date.now();
+          loop.summary = "Awaiting human approval before continuing.";
+          loop.output = {
+            status: run.approval.status,
+            gates: run.approval.gates,
+            requestedAt: run.approval.requestedAt ?? null
+          };
+          run.status = "awaiting_approval";
+          run.artifacts[definition.name] = loop.output;
+          this.save(run);
+          return;
+        }
+
+        if (definition.name === "human_approval" && run.approval.status === "rejected") {
+          loop.status = "failed";
+          loop.finishedAt = Date.now();
+          loop.summary = "Human approval was rejected.";
+          loop.output = {
+            status: run.approval.status,
+            gates: run.approval.gates,
+            rejectedAt: run.approval.rejectedAt ?? null,
+            rejectedBy: run.approval.rejectedBy ?? null,
+            note: run.approval.note ?? null
+          };
+          run.status = "failed";
+          run.artifacts[definition.name] = loop.output;
+          this.save(run);
+          return;
         }
 
         loop.status = "running";

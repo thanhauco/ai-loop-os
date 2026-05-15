@@ -12,6 +12,7 @@ export const loopOrder: Array<{ name: LoopName; title: string }> = [
   { name: "retry", title: "Retry Loop" },
   { name: "security", title: "Security Loop" },
   { name: "compliance", title: "Compliance Loop" },
+  { name: "human_approval", title: "Human Approval Loop" },
   { name: "memory", title: "Memory Loop" },
   { name: "deployment", title: "Deployment Loop" },
   { name: "monitoring", title: "Monitoring Loop" }
@@ -28,11 +29,13 @@ export class RunStore {
 
     this.persistence = new JsonFileStore<Run[]>(filePath, []);
     for (const run of this.persistence.read()) {
+      run.workflow ??= "build_feature";
+      run.approval ??= { status: "not_required", gates: [] };
       this.runs.set(run.id, run);
     }
   }
 
-  create(request: RunRequest, options?: { workflowName?: string; loopNames?: LoopName[] }): Run {
+  create(request: RunRequest, options?: { workflowName?: string; loopNames?: LoopName[]; approvalGates?: string[] }): Run {
     const now = Date.now();
     const loopTemplates = new Map(loopOrder.map((loop) => [loop.name, loop]));
     const selectedLoops = options?.loopNames?.length
@@ -50,6 +53,9 @@ export class RunStore {
       goal: request.goal.trim(),
       status: "queued",
       workflow: options?.workflowName ?? request.workflow ?? "build_feature",
+      approval: options?.approvalGates?.length
+        ? { status: "pending", gates: options.approvalGates, requestedAt: now }
+        : { status: "not_required", gates: [] },
       createdAt: now,
       updatedAt: now,
       compliance: request.compliance?.length ? request.compliance : ["SOC2"],

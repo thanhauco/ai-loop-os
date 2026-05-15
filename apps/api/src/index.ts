@@ -59,7 +59,7 @@ app.post("/api/runs", (request, response) => {
   }
 
   const workflow = findWorkflow(body.workflow);
-  const run = runs.create(body, { workflowName: workflow.name, loopNames: workflow.loops });
+  const run = runs.create(body, { workflowName: workflow.name, loopNames: workflow.loops, approvalGates: workflow.approvalGates });
   runEvents.publish(run);
   void orchestrator.execute(run.id);
 
@@ -73,6 +73,56 @@ app.get("/api/runs/:id", (request, response) => {
     response.status(404).json({ error: "Run not found." });
     return;
   }
+
+  response.json(run);
+});
+
+app.post("/api/runs/:id/approve", (request, response) => {
+  const run = runs.get(request.params.id);
+
+  if (!run) {
+    response.status(404).json({ error: "Run not found." });
+    return;
+  }
+
+  if (run.approval.status !== "pending") {
+    response.status(409).json({ error: `Run approval is ${run.approval.status}.` });
+    return;
+  }
+
+  const body = request.body as { approvedBy?: string; note?: string };
+  run.approval.status = "approved";
+  run.approval.approvedAt = Date.now();
+  run.approval.approvedBy = body.approvedBy?.trim() || "local-operator";
+  run.approval.note = body.note?.trim() || undefined;
+  runs.save(run);
+  runEvents.publish(run);
+  void orchestrator.execute(run.id);
+
+  response.json(run);
+});
+
+app.post("/api/runs/:id/reject", (request, response) => {
+  const run = runs.get(request.params.id);
+
+  if (!run) {
+    response.status(404).json({ error: "Run not found." });
+    return;
+  }
+
+  if (run.approval.status !== "pending") {
+    response.status(409).json({ error: `Run approval is ${run.approval.status}.` });
+    return;
+  }
+
+  const body = request.body as { rejectedBy?: string; note?: string };
+  run.approval.status = "rejected";
+  run.approval.rejectedAt = Date.now();
+  run.approval.rejectedBy = body.rejectedBy?.trim() || "local-operator";
+  run.approval.note = body.note?.trim() || undefined;
+  runs.save(run);
+  runEvents.publish(run);
+  void orchestrator.execute(run.id);
 
   response.json(run);
 });

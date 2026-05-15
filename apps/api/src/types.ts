@@ -10,6 +10,7 @@ export type LoopName =
   | "retry"
   | "security"
   | "compliance"
+  | "human_approval"
   | "memory"
   | "deployment"
   | "monitoring";
@@ -29,7 +30,7 @@ export interface LoopRecord {
   logs: string[];
 }
 
-export type RunStatus = "queued" | "running" | "succeeded" | "failed";
+export type RunStatus = "queued" | "running" | "awaiting_approval" | "succeeded" | "failed";
 
 export interface RunRequest {
   goal: string;
@@ -46,6 +47,7 @@ export interface Run {
   goal: string;
   status: RunStatus;
   workflow: string;
+  approval: RunApproval;
   createdAt: number;
   updatedAt: number;
   compliance: string[];
@@ -55,6 +57,17 @@ export interface Run {
   artifacts: Record<string, unknown>;
   /** Overall quality score 0-100. */
   qualityScore?: number;
+}
+
+export interface RunApproval {
+  status: "not_required" | "pending" | "approved" | "rejected";
+  gates: string[];
+  requestedAt?: number;
+  approvedAt?: number;
+  rejectedAt?: number;
+  approvedBy?: string;
+  rejectedBy?: string;
+  note?: string;
 }
 
 export interface WorkflowDefinition {

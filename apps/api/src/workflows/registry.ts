@@ -5,7 +5,7 @@ export const workflowRegistry: WorkflowDefinition[] = [
     name: "build_feature",
     title: "Build Feature",
     description: "Full autonomous feature delivery from planning through monitoring.",
-    loops: ["planner", "research", "coding", "evaluation", "verification", "reflection", "retry", "security", "compliance", "memory", "deployment", "monitoring"],
+    loops: ["planner", "research", "coding", "evaluation", "verification", "reflection", "retry", "security", "compliance", "human_approval", "memory", "deployment", "monitoring"],
     approvalGates: ["production_deployment", "regulated_data_access"],
     qualityGates: { minimumQualityScore: 85, blockOnCriticalSecurity: true }
   },
@@ -34,7 +34,7 @@ export const workflowRegistry: WorkflowDefinition[] = [
     name: "release",
     title: "Release",
     description: "Release readiness, security, compliance, deployment, and monitoring workflow.",
-    loops: ["verification", "evaluation", "security", "compliance", "deployment", "monitoring", "reflection", "memory"],
+    loops: ["verification", "evaluation", "security", "compliance", "human_approval", "deployment", "monitoring", "reflection", "memory"],
     approvalGates: ["deployment_approval", "rollback_plan_acceptance"],
     qualityGates: { buildRequired: true, smokeTestRequired: true, rollbackRequired: true }
   }

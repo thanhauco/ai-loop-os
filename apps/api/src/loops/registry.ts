@@ -287,6 +287,24 @@ export const loopRegistry: LoopDefinition[] = [
     }
   },
   {
+    name: "human_approval",
+    title: "Human Approval Loop",
+    description: "Pauses gated workflows until an operator approves deployment or regulated actions.",
+    async execute({ run, emit }) {
+      emit("human_approval", "Human approval gates have been satisfied.");
+      return {
+        summary: "Human approval received; workflow can continue.",
+        output: {
+          status: run.approval.status,
+          gates: run.approval.gates,
+          approvedAt: run.approval.approvedAt ?? null,
+          approvedBy: run.approval.approvedBy ?? null,
+          note: run.approval.note ?? null
+        }
+      };
+    }
+  },
+  {
     name: "deployment",
     title: "Deployment Loop",
     description: "Builds deployment readiness, rollout, and rollback plans.",
