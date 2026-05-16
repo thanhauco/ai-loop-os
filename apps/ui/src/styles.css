@@ -255,6 +255,7 @@ h2 {
 
 .run-status.running,
 .run-status.queued,
+.run-status.awaiting_approval,
 .status-pill.running,
 .loop-card.running {
   color: #8a5a00;
@@ -307,6 +308,69 @@ h2 {
   border-radius: inherit;
   background: linear-gradient(90deg, #1f8a70, #3772ff, #d66b3d);
   transition: width 180ms ease;
+}
+
+.approval-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(138, 90, 0, 0.24);
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #563700;
+}
+
+.approval-panel.approved {
+  border-color: rgba(22, 112, 87, 0.24);
+  background: #effaf5;
+  color: #155f4c;
+}
+
+.approval-panel.rejected {
+  border-color: rgba(177, 42, 49, 0.24);
+  background: #fff0ef;
+  color: #8d242a;
+}
+
+.approval-panel strong,
+.approval-panel p {
+  margin: 0;
+}
+
+.approval-panel p {
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.approval-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.approval-button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #ffffff;
+  font-weight: 850;
+}
+
+.approval-button.approve {
+  background: #1f8a70;
+}
+
+.approval-button.reject {
+  background: #b12a31;
+}
+
+.approval-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .loop-grid {
@@ -500,7 +564,8 @@ h2 {
 
   .topbar,
   .panel-heading.spread,
-  .time-row {
+  .time-row,
+  .approval-panel {
     align-items: stretch;
     flex-direction: column;
   }

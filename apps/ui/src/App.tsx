@@ -2,7 +2,7 @@ import { Activity, BrainCircuit, CheckCircle2, Clock3, Database, FileText, Play,
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type LoopStatus = "pending" | "running" | "passed" | "failed" | "skipped";
-type RunStatus = "queued" | "running" | "succeeded" | "failed";
+type RunStatus = "queued" | "running" | "awaiting_approval" | "succeeded" | "failed";
 
 type LoopRecord = {
   name: string;
@@ -20,6 +20,16 @@ type Run = {
   goal: string;
   status: RunStatus;
   workflow?: string;
+  approval?: {
+    status: "not_required" | "pending" | "approved" | "rejected";
+    gates: string[];
+    requestedAt?: number;
+    approvedAt?: number;
+    rejectedAt?: number;
+    approvedBy?: string;
+    rejectedBy?: string;
+    note?: string;
+  };
   createdAt: number;
   updatedAt: number;
   compliance: string[];
@@ -67,7 +77,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 function statusIcon(status: LoopStatus | RunStatus) {
-  if (status === "running" || status === "queued") {
+  if (status === "running" || status === "queued" || status === "awaiting_approval") {
     return <RefreshCw className="spin" size={16} aria-hidden="true" />;
   }
 
@@ -110,6 +120,7 @@ function App() {
   const [selectedLoop, setSelectedLoop] = useState<string>("planner");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [approvalBusy, setApprovalBusy] = useState(false);
 
   const currentLoop = useMemo(
     () => activeRun?.loops.find((loop) => loop.name === selectedLoop) ?? activeRun?.loops[0],
@@ -120,6 +131,7 @@ function App() {
   const totalLoops = activeRun?.loops.length ?? 0;
   const progress = totalLoops ? Math.round((completedLoops / totalLoops) * 100) : 0;
   const currentWorkflow = workflows.find((workflow) => workflow.name === selectedWorkflow);
+  const needsApproval = activeRun?.status === "awaiting_approval" && activeRun.approval?.status === "pending";
 
   async function refresh(runId?: string) {
     const [nextRuns, nextMemory] = await Promise.all([
@@ -149,7 +161,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!activeRun || !["queued", "running"].includes(activeRun.status)) {
+    if (!activeRun || !["queued", "running", "awaiting_approval"].includes(activeRun.status)) {
       return;
     }
 
@@ -164,7 +176,7 @@ function App() {
       });
       setSelectedLoop((previous) => nextRun.loops.some((loop) => loop.name === previous) ? previous : nextRun.loops[0]?.name ?? "planner");
 
-      if (!["queued", "running"].includes(nextRun.status)) {
+      if (!["queued", "running", "awaiting_approval"].includes(nextRun.status)) {
         void refresh(nextRun.id).catch((caught) => setError(caught instanceof Error ? caught.message : "Refresh failed"));
         events.close();
       }
@@ -204,6 +216,32 @@ function App() {
         ? current.filter((item) => item !== framework)
         : [...current, framework]
     );
+  }
+
+  async function decideApproval(action: "approve" | "reject") {
+    if (!activeRun) {
+      return;
+    }
+
+    setApprovalBusy(true);
+    setError(null);
+
+    try {
+      const nextRun = await api<Run>(`/api/runs/${activeRun.id}/${action}`, {
+        method: "POST",
+        body: JSON.stringify({
+          approvedBy: "dashboard-operator",
+          rejectedBy: "dashboard-operator",
+          note: action === "approve" ? "Approved from operator dashboard" : "Rejected from operator dashboard"
+        })
+      });
+      setActiveRun(nextRun);
+      await refresh(nextRun.id);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : `Could not ${action} run`);
+    } finally {
+      setApprovalBusy(false);
+    }
   }
 
   return (
@@ -300,6 +338,28 @@ function App() {
           <div className="progress-track" aria-label="Loop progress">
             <span style={{ width: `${progress}%` }} />
           </div>
+
+          {needsApproval ? (
+            <div className="approval-panel" role="status">
+              <div>
+                <strong>Approval required</strong>
+                <p>{activeRun.approval?.gates.join(", ")}</p>
+              </div>
+              <div className="approval-actions">
+                <button type="button" className="approval-button approve" disabled={approvalBusy} onClick={() => void decideApproval("approve")}>
+                  Approve
+                </button>
+                <button type="button" className="approval-button reject" disabled={approvalBusy} onClick={() => void decideApproval("reject")}>
+                  Reject
+                </button>
+              </div>
+            </div>
+          ) : activeRun?.approval && activeRun.approval.status !== "not_required" ? (
+            <div className={`approval-panel ${activeRun.approval.status}`}>
+              <strong>Approval {activeRun.approval.status}</strong>
+              <p>{activeRun.approval.gates.join(", ")}</p>
+            </div>
+          ) : null}
 
           <div className="loop-grid">
             {activeRun?.loops.map((loop) => (
