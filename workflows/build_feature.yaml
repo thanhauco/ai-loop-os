@@ -3,14 +3,24 @@ version: 0.1.0
 entry_loop: planner
 loops:
   - planner
+  - routing
   - research
+  - tool_selection
   - coding
   - evaluation
+  - critic
   - verification
+  - simulation
   - reflection
   - retry
   - security
   - compliance
+  - cost
+  - latency
+  - multi_agent_debate
+  - human_approval
+  - knowledge_graph
+  - learning
   - memory
   - deployment
   - monitoring

@@ -4,11 +4,17 @@ entry_loop: verification
 loops:
   - verification
   - evaluation
+  - critic
   - security
   - compliance
+  - simulation
+  - cost
+  - latency
+  - human_approval
   - deployment
   - monitoring
   - reflection
+  - learning
   - memory
 approval_gates:
   - deployment_approval

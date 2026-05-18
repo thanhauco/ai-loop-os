@@ -47,6 +47,28 @@ export const loopRegistry: LoopDefinition[] = [
     }
   },
   {
+    name: "routing",
+    title: "Routing Loop",
+    description: "Chooses the model and agent route for the current objective.",
+    async execute({ run, emit }) {
+      emit("routing", "Selecting model route, fallback policy, and agent lane.");
+      const regulated = run.compliance.some((framework) => ["HIPAA", "PCI-DSS", "GDPR"].includes(framework));
+      return {
+        summary: regulated ? "Selected regulated-workload routing policy." : "Selected standard autonomous engineering route.",
+        output: {
+          selectedModel: regulated ? "frontier-regulated-reasoning-model" : "balanced-engineering-model",
+          fallbackModels: ["architect-review-model", "research-long-context-model", "local-llama"],
+          agentLane: regulated ? "compliance-first" : "delivery-first",
+          routingSignals: {
+            workflow: run.workflow,
+            compliance: run.compliance,
+            retryBudget: run.maxRetries
+          }
+        }
+      };
+    }
+  },
+  {
     name: "research",
     title: "Research Loop",
     description: "Collects facts, citations, implementation constraints, and tool signals.",
@@ -76,6 +98,28 @@ export const loopRegistry: LoopDefinition[] = [
             "Compliance and security outputs must be auditable"
           ],
           synthesis
+        }
+      };
+    }
+  },
+  {
+    name: "tool_selection",
+    title: "Tool Selection Loop",
+    description: "Chooses the safest tools for research, code execution, scanning, and deployment.",
+    async execute({ run, emit }) {
+      emit("tool_selection", "Choosing tools based on workflow risk and approval boundaries.");
+      const deploymentLikely = run.workflow === "release" || run.workflow === "build_feature";
+      return {
+        summary: "Selected tool policy for this workflow.",
+        output: {
+          selectedTools: ["search", "rag", "terminal", "evaluation_suite", deploymentLikely ? "docker" : "semgrep"],
+          blockedTools: deploymentLikely && run.approval.status === "pending" ? ["kubernetes", "argocd"] : [],
+          approvalRequiredFor: ["source writes", "terminal mutations", "production deployment", "regulated data access"],
+          policy: {
+            preferStructuredApis: true,
+            redactSecrets: true,
+            recordToolInputs: true
+          }
         }
       };
     }
@@ -144,6 +188,35 @@ export const loopRegistry: LoopDefinition[] = [
     }
   },
   {
+    name: "critic",
+    title: "Critic Loop",
+    description: "Challenges assumptions, tests reasoning, and proposes counterexamples.",
+    async execute({ run, emit }) {
+      emit("critic", "Challenging plan assumptions and quality claims.");
+      return {
+        summary: "Critic review found manageable risks and concrete mitigations.",
+        output: {
+          challenges: [
+            "Does the workflow have a durable audit trail for each loop transition?",
+            "Can approval gates stop deployment tools before irreversible actions?",
+            "Are compliance outputs evidence-backed rather than just descriptive?"
+          ],
+          counterarguments: [
+            "Local JSON persistence is suitable for development, not regulated production audit retention",
+            "Mock provider output must not be treated as factual production grounding",
+            "Quality score is deterministic demo data until wired to real evaluators"
+          ],
+          mitigations: [
+            "Persist run events to PostgreSQL before production",
+            "Attach source citations and evaluator traces to compliance evidence",
+            "Keep human approval before deployment in gated workflows"
+          ],
+          workflow: run.workflow
+        }
+      };
+    }
+  },
+  {
     name: "verification",
     title: "Verification Loop",
     description: "Checks factual grounding, dependency compatibility, and API assumptions.",
@@ -160,6 +233,29 @@ export const loopRegistry: LoopDefinition[] = [
             { name: "Loop artifacts are structured", status: "passed" },
             { name: "Mock provider can be replaced", status: "passed" }
           ]
+        }
+      };
+    }
+  },
+  {
+    name: "simulation",
+    title: "Simulation Loop",
+    description: "Runs scenario analysis before actions continue into deployment or compliance-sensitive steps.",
+    async execute({ run, emit }) {
+      emit("simulation", "Simulating success, failure, rollback, and compliance scenarios.");
+      const scenarios = [
+        { name: "happy_path", result: "pass", risk: "low" },
+        { name: "model_hallucination", result: "mitigated", risk: "medium" },
+        { name: "dependency_failure", result: "rollback-required", risk: "medium" },
+        { name: "approval_rejected", result: "stop-workflow", risk: "low" }
+      ];
+
+      return {
+        summary: `Simulated ${scenarios.length} operational scenarios.`,
+        output: {
+          scenarios,
+          recommendedAction: run.approval.status === "pending" ? "wait-for-approval" : "continue",
+          rollbackConfidence: run.workflow === "release" ? "medium" : "not-applicable"
         }
       };
     }
@@ -248,6 +344,108 @@ export const loopRegistry: LoopDefinition[] = [
             status: "draft-evidence"
           })),
           humanApprovalRequiredFor: ["production deployment", "external data access", "regulated data processing"]
+        }
+      };
+    }
+  },
+  {
+    name: "cost",
+    title: "Cost Loop",
+    description: "Estimates and constrains model, tool, and infrastructure spend.",
+    async execute({ run, emit }) {
+      emit("cost", "Estimating token, tool, and infrastructure cost envelope.");
+      const estimatedTokens = Math.max(2400, run.goal.length * run.loops.length * 18);
+      const estimatedCostUsd = Number((estimatedTokens * 0.000012).toFixed(4));
+      return {
+        summary: `Estimated run cost is $${estimatedCostUsd} with local mock execution.`,
+        output: {
+          estimatedTokens,
+          estimatedCostUsd,
+          costControls: ["route low-risk work to smaller models", "cache research facts", "cap retries", "require approval for expensive tools"],
+          budgetStatus: estimatedCostUsd <= 5 ? "within-budget" : "requires-approval"
+        }
+      };
+    }
+  },
+  {
+    name: "latency",
+    title: "Latency Loop",
+    description: "Optimizes loop ordering, model choices, and tool execution time.",
+    async execute({ run, emit }) {
+      emit("latency", "Calculating latency budget and optimization opportunities.");
+      const estimatedLatencyMs = run.loops.length * 175;
+      return {
+        summary: `Estimated local loop latency is ${estimatedLatencyMs}ms.`,
+        output: {
+          estimatedLatencyMs,
+          latencyBudgetMs: 120000,
+          bottlenecks: ["research fan-out", "security scans", "deployment verification"],
+          optimizations: ["parallelize read-only research", "cache workflow manifests", "stream loop events", "defer non-blocking learning writes"],
+          status: estimatedLatencyMs < 120000 ? "within-budget" : "over-budget"
+        }
+      };
+    }
+  },
+  {
+    name: "multi_agent_debate",
+    title: "Multi-Agent Debate Loop",
+    description: "Coordinates agent disagreement before high-risk decisions are accepted.",
+    async execute({ run, emit }) {
+      emit("multi_agent_debate", "Running planner, critic, security, and compliance perspectives.");
+      return {
+        summary: "Debate reached consensus with explicit dissent recorded.",
+        output: {
+          participants: ["planner_agent", "critic_agent", "security_agent", "compliance_agent"],
+          positions: [
+            { agent: "planner_agent", position: "continue with current loop plan" },
+            { agent: "critic_agent", position: "require stronger grounding before deployment" },
+            { agent: "security_agent", position: "block production tools until approval" },
+            { agent: "compliance_agent", position: "preserve evidence and approval trail" }
+          ],
+          consensus: run.approval.status === "pending" ? "pause for approval" : "continue with mitigations",
+          dissent: ["quality score remains synthetic until evaluator integration"]
+        }
+      };
+    }
+  },
+  {
+    name: "knowledge_graph",
+    title: "Knowledge Graph Loop",
+    description: "Updates graph memory with run, loop, artifact, compliance, and dependency relationships.",
+    async execute({ run, emit }) {
+      emit("knowledge_graph", "Preparing graph memory update.");
+      return {
+        summary: "Prepared knowledge graph nodes and relationships for the run.",
+        output: {
+          nodes: [
+            { label: "Run", id: run.id },
+            { label: "Workflow", id: run.workflow },
+            { label: "Goal", id: `goal:${run.id}` },
+            ...run.loops.map((loop) => ({ label: "Loop", id: loop.name }))
+          ],
+          relationships: [
+            { from: run.id, type: "USES_WORKFLOW", to: run.workflow },
+            { from: run.id, type: "HAS_GOAL", to: `goal:${run.id}` },
+            ...run.loops.map((loop) => ({ from: run.id, type: "EXECUTED_LOOP", to: loop.name }))
+          ],
+          backendTarget: "neo4j"
+        }
+      };
+    }
+  },
+  {
+    name: "learning",
+    title: "Learning Loop",
+    description: "Improves reusable prompts, workflows, and policies from run outcomes.",
+    async execute({ run, emit }) {
+      emit("learning", "Extracting workflow improvements from run artifacts.");
+      return {
+        summary: "Captured reusable workflow improvements.",
+        output: {
+          promptImprovements: ["Ask critic loop to produce counterexamples before deployment", "Include compliance framework names in research constraints"],
+          workflowImprovements: ["Run simulation before approval gates", "Record cost and latency before deployment"],
+          policyUpdates: ["Require human approval for Kubernetes and ArgoCD tools", "Route regulated workflows to compliance-first model policy"],
+          shouldCompressMemory: run.loops.length > 12
         }
       };
     }

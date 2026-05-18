@@ -3,11 +3,15 @@ version: 0.1.0
 entry_loop: planner
 loops:
   - planner
+  - routing
   - research
+  - tool_selection
   - coding
   - verification
   - evaluation
+  - critic
   - reflection
+  - learning
   - memory
   - monitoring
 quality_gates:

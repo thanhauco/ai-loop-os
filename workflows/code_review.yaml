@@ -3,11 +3,14 @@ version: 0.1.0
 entry_loop: research
 loops:
   - research
+  - multi_agent_debate
   - evaluation
+  - critic
   - verification
   - security
   - compliance
   - reflection
+  - knowledge_graph
   - memory
 quality_gates:
   findings_first: true

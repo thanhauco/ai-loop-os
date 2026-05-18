@@ -3,10 +3,14 @@ version: 0.1.0
 entry_loop: security
 loops:
   - research
+  - tool_selection
   - security
   - verification
+  - simulation
   - compliance
+  - cost
   - reflection
+  - knowledge_graph
   - memory
 quality_gates:
   block_on_critical_security: true
