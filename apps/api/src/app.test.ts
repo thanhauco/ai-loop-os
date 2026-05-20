@@ -65,8 +65,12 @@ describe("AI-Loop-OS API", () => {
     assert.equal(paused.approval.status, "pending");
     assert.equal(paused.loops.find((loop) => loop.name === "human_approval")?.status, "running");
 
+    await agent.post(`/api/runs/${created.body.id}/approve`).send({ approvedBy: "test-operator" }).expect(403);
+
     await agent
       .post(`/api/runs/${created.body.id}/approve`)
+      .set("x-operator-role", "approver")
+      .set("x-operator-id", "test-operator")
       .send({ approvedBy: "test-operator", note: "test approval" })
       .expect(200);
 

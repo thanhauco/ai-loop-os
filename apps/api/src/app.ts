@@ -1,6 +1,7 @@
 import cors from "cors";
 import express from "express";
 import { join } from "node:path";
+import { requireApprover } from "./auth/operatorAuth.js";
 import { RunEventBus } from "./events/runEvents.js";
 import { loopRegistry } from "./loops/registry.js";
 import { Orchestrator } from "./orchestrator.js";
@@ -82,6 +83,11 @@ export function createApiApp(options: ApiAppOptions = {}) {
   });
 
   app.post("/api/runs/:id/approve", (request, response) => {
+    const operator = requireApprover(request, response);
+    if (!operator) {
+      return;
+    }
+
     const run = runs.get(request.params.id);
 
     if (!run) {
@@ -97,7 +103,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     const body = request.body as { approvedBy?: string; note?: string };
     run.approval.status = "approved";
     run.approval.approvedAt = Date.now();
-    run.approval.approvedBy = body.approvedBy?.trim() || "local-operator";
+    run.approval.approvedBy = body.approvedBy?.trim() || operator.id;
     run.approval.note = body.note?.trim() || undefined;
     runs.save(run);
     runEvents.publish(run);
@@ -107,6 +113,11 @@ export function createApiApp(options: ApiAppOptions = {}) {
   });
 
   app.post("/api/runs/:id/reject", (request, response) => {
+    const operator = requireApprover(request, response);
+    if (!operator) {
+      return;
+    }
+
     const run = runs.get(request.params.id);
 
     if (!run) {
@@ -122,7 +133,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     const body = request.body as { rejectedBy?: string; note?: string };
     run.approval.status = "rejected";
     run.approval.rejectedAt = Date.now();
-    run.approval.rejectedBy = body.rejectedBy?.trim() || "local-operator";
+    run.approval.rejectedBy = body.rejectedBy?.trim() || operator.id;
     run.approval.note = body.note?.trim() || undefined;
     runs.save(run);
     runEvents.publish(run);

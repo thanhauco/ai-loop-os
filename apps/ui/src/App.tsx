@@ -229,6 +229,10 @@ function App() {
     try {
       const nextRun = await api<Run>(`/api/runs/${activeRun.id}/${action}`, {
         method: "POST",
+        headers: {
+          "x-operator-role": "approver",
+          "x-operator-id": "dashboard-operator"
+        },
         body: JSON.stringify({
           approvedBy: "dashboard-operator",
           rejectedBy: "dashboard-operator",
