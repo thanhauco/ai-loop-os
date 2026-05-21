@@ -5,7 +5,7 @@ import { requireApprover } from "./auth/operatorAuth.js";
 import { RunEventBus } from "./events/runEvents.js";
 import { loopRegistry } from "./loops/registry.js";
 import { Orchestrator } from "./orchestrator.js";
-import { MockLlmProvider } from "./providers/mockLlmProvider.js";
+import { createLlmProvider } from "./providers/providerFactory.js";
 import { InMemoryMemoryStore } from "./stores/memoryStore.js";
 import { RunStore } from "./stores/runStore.js";
 import type { RunRequest } from "./types.js";
@@ -20,7 +20,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
   const dataDir = options.dataDir ?? process.env.DATA_DIR ?? join(process.cwd(), ".data");
   const runs = new RunStore(join(dataDir, "runs.json"));
   const memory = new InMemoryMemoryStore(join(dataDir, "memory.json"));
-  const llm = new MockLlmProvider();
+  const llm = createLlmProvider();
   const runEvents = new RunEventBus();
   const orchestrator = new Orchestrator(runs, memory, llm, (run) => runEvents.publish(run));
 

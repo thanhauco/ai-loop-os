@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
 import { createApiApp } from "./app.js";
+import { createLlmProvider } from "./providers/providerFactory.js";
 import type { Run } from "./types.js";
 
 let dataDir: string;
@@ -38,6 +39,17 @@ describe("AI-Loop-OS API", () => {
     const response = await agent.get("/api/workflows").expect(200);
     assert.equal(response.body.length, 5);
     assert.ok(response.body.some((workflow: { name: string }) => workflow.name === "build_feature"));
+  });
+
+  it("uses mock model provider by default", () => {
+    assert.equal(createLlmProvider({}).name, "mock-local-loop-model");
+  });
+
+  it("requires an API key for OpenAI-compatible providers", () => {
+    assert.throws(
+      () => createLlmProvider({ LLM_PROVIDER: "openai-compatible" }),
+      /LLM_API_KEY is required/
+    );
   });
 
   it("creates workflow-specific runs", async () => {
