@@ -8,6 +8,7 @@ import { Orchestrator } from "./orchestrator.js";
 import { createLlmProvider } from "./providers/providerFactory.js";
 import { InMemoryMemoryStore } from "./stores/memoryStore.js";
 import { RunStore } from "./stores/runStore.js";
+import { TelemetryStore } from "./telemetry/telemetryStore.js";
 import type { RunRequest } from "./types.js";
 import { findWorkflow, workflowRegistry } from "./workflows/registry.js";
 
@@ -22,7 +23,8 @@ export function createApiApp(options: ApiAppOptions = {}) {
   const memory = new InMemoryMemoryStore(join(dataDir, "memory.json"));
   const llm = createLlmProvider();
   const runEvents = new RunEventBus();
-  const orchestrator = new Orchestrator(runs, memory, llm, (run) => runEvents.publish(run));
+  const telemetry = new TelemetryStore();
+  const orchestrator = new Orchestrator(runs, memory, llm, (run) => runEvents.publish(run), telemetry);
 
   app.use(cors());
   app.use(express.json({ limit: "1mb" }));
@@ -65,6 +67,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
 
     const workflow = findWorkflow(body.workflow);
     const run = runs.create(body, { workflowName: workflow.name, loopNames: workflow.loops, approvalGates: workflow.approvalGates });
+    telemetry.record({ type: "run_created", runId: run.id, runStatus: run.status, data: { workflow: run.workflow } });
     runEvents.publish(run);
     void orchestrator.execute(run.id);
 
@@ -183,5 +186,14 @@ export function createApiApp(options: ApiAppOptions = {}) {
     response.json(memory.query(kind as "episodic" | "semantic" | "procedural" | undefined));
   });
 
-  return { app, services: { runs, memory, llm, runEvents, orchestrator, dataDir } };
+  app.get("/api/telemetry", (request, response) => {
+    const limit = Number(request.query.limit ?? 100);
+    response.json(telemetry.list(Number.isFinite(limit) ? limit : 100));
+  });
+
+  app.get("/metrics", (_request, response) => {
+    response.type("text/plain").send(telemetry.prometheus(runs.list()));
+  });
+
+  return { app, services: { runs, memory, llm, runEvents, orchestrator, telemetry, dataDir } };
 }

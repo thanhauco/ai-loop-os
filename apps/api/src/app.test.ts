@@ -141,4 +141,20 @@ describe("AI-Loop-OS API", () => {
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
   });
+
+  it("exposes telemetry events and Prometheus metrics", async () => {
+    const created = await agent
+      .post("/api/runs")
+      .send({ goal: "Measure this run", workflow: "security_scan", compliance: ["SOC2"], maxRetries: 1 })
+      .expect(202);
+
+    await waitForRun(created.body.id, (candidate) => candidate.status === "succeeded");
+
+    const telemetry = await agent.get("/api/telemetry").expect(200);
+    const metrics = await agent.get("/metrics").expect(200);
+
+    assert.ok(telemetry.body.some((event: { type: string }) => event.type === "run_completed"));
+    assert.match(metrics.text, /ai_loop_os_runs_total/);
+    assert.match(metrics.text, /ai_loop_os_completed_loops_total/);
+  });
 });

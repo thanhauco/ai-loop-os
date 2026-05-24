@@ -1,4 +1,5 @@
 import { loopRegistry } from "./loops/registry.js";
+import type { TelemetryStore } from "./telemetry/telemetryStore.js";
 import type { LlmProvider, LoopName, MemoryStore, RunContext } from "./types.js";
 import type { RunStore } from "./stores/runStore.js";
 import type { Run } from "./types.js";
@@ -14,7 +15,8 @@ export class Orchestrator {
     private readonly runs: RunStore,
     private readonly memory: MemoryStore,
     private readonly llm: LlmProvider,
-    private readonly onRunUpdated?: (run: Run) => void
+    private readonly onRunUpdated?: (run: Run) => void,
+    private readonly telemetry?: TelemetryStore
   ) {}
 
   async execute(runId: string): Promise<void> {
@@ -52,6 +54,7 @@ export class Orchestrator {
         }
 
         if (definition.name === "human_approval" && run.approval.status === "pending") {
+          this.telemetry?.record({ type: "approval_wait", runId: run.id, loopName: definition.name, runStatus: "awaiting_approval" });
           loop.status = "running";
           loop.startedAt ??= Date.now();
           loop.summary = "Awaiting human approval before continuing.";
@@ -85,6 +88,7 @@ export class Orchestrator {
 
         loop.status = "running";
         loop.startedAt = Date.now();
+        this.telemetry?.record({ type: "loop_started", runId: run.id, loopName: definition.name, runStatus: run.status });
         this.save(run);
 
         const result = await definition.execute(context);
@@ -98,11 +102,20 @@ export class Orchestrator {
           run.qualityScore = result.qualityScore;
         }
 
+        this.telemetry?.record({
+          type: "loop_completed",
+          runId: run.id,
+          loopName: definition.name,
+          runStatus: run.status,
+          data: { durationMs: loop.finishedAt - (loop.startedAt ?? loop.finishedAt) }
+        });
+
         this.save(run);
         await sleep(loopPauseMs);
       }
 
       run.status = "succeeded";
+      this.telemetry?.record({ type: "run_completed", runId: run.id, runStatus: run.status, data: { qualityScore: run.qualityScore ?? null } });
       this.save(run);
     } catch (error) {
       const runningLoop = run.loops.find((loop) => loop.status === "running");
@@ -113,12 +126,14 @@ export class Orchestrator {
       }
 
       run.status = "failed";
+  this.telemetry?.record({ type: "run_failed", runId: run.id, runStatus: run.status });
       this.save(run);
     }
   }
 
   private save(run: Run): void {
     this.runs.save(run);
+    this.telemetry?.record({ type: "run_updated", runId: run.id, runStatus: run.status });
     this.onRunUpdated?.(run);
   }
 }
