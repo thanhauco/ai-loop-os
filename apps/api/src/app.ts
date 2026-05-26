@@ -5,6 +5,7 @@ import { requireApprover } from "./auth/operatorAuth.js";
 import { RunEventBus } from "./events/runEvents.js";
 import { loopRegistry } from "./loops/registry.js";
 import { Orchestrator } from "./orchestrator.js";
+import { PostgresMirror } from "./persistence/postgresMirror.js";
 import { createLlmProvider } from "./providers/providerFactory.js";
 import { InMemoryMemoryStore } from "./stores/memoryStore.js";
 import { RunStore } from "./stores/runStore.js";
@@ -19,18 +20,37 @@ export interface ApiAppOptions {
 export function createApiApp(options: ApiAppOptions = {}) {
   const app = express();
   const dataDir = options.dataDir ?? process.env.DATA_DIR ?? join(process.cwd(), ".data");
+  const postgresMirror = process.env.DATABASE_URL ? new PostgresMirror(process.env.DATABASE_URL) : undefined;
   const runs = new RunStore(join(dataDir, "runs.json"));
-  const memory = new InMemoryMemoryStore(join(dataDir, "memory.json"));
+  const memory = new InMemoryMemoryStore(join(dataDir, "memory.json"), (record) => postgresMirror?.safeInsertMemory(record));
   const llm = createLlmProvider();
   const runEvents = new RunEventBus();
   const telemetry = new TelemetryStore();
-  const orchestrator = new Orchestrator(runs, memory, llm, (run) => runEvents.publish(run), telemetry);
+  const orchestrator = new Orchestrator(
+    runs,
+    memory,
+    llm,
+    (run) => {
+      postgresMirror?.safeUpsertRun(run);
+      runEvents.publish(run);
+    },
+    telemetry
+  );
 
   app.use(cors());
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/api/health", (_request, response) => {
-    response.json({ status: "ok", service: "ai-loop-os-api", modelProvider: llm.name, dataDir });
+    response.json({
+      status: "ok",
+      service: "ai-loop-os-api",
+      modelProvider: llm.name,
+      dataDir,
+      persistence: {
+        primary: "json-file",
+        postgresMirror: Boolean(postgresMirror)
+      }
+    });
   });
 
   app.get("/api/loops", (_request, response) => {
@@ -68,6 +88,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     const workflow = findWorkflow(body.workflow);
     const run = runs.create(body, { workflowName: workflow.name, loopNames: workflow.loops, approvalGates: workflow.approvalGates });
     telemetry.record({ type: "run_created", runId: run.id, runStatus: run.status, data: { workflow: run.workflow } });
+    postgresMirror?.safeUpsertRun(run);
     runEvents.publish(run);
     void orchestrator.execute(run.id);
 
@@ -109,6 +130,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     run.approval.approvedBy = body.approvedBy?.trim() || operator.id;
     run.approval.note = body.note?.trim() || undefined;
     runs.save(run);
+    postgresMirror?.safeUpsertRun(run);
     runEvents.publish(run);
     void orchestrator.execute(run.id);
 
@@ -139,6 +161,7 @@ export function createApiApp(options: ApiAppOptions = {}) {
     run.approval.rejectedBy = body.rejectedBy?.trim() || operator.id;
     run.approval.note = body.note?.trim() || undefined;
     runs.save(run);
+    postgresMirror?.safeUpsertRun(run);
     runEvents.publish(run);
     void orchestrator.execute(run.id);
 
@@ -195,5 +218,5 @@ export function createApiApp(options: ApiAppOptions = {}) {
     response.type("text/plain").send(telemetry.prometheus(runs.list()));
   });
 
-  return { app, services: { runs, memory, llm, runEvents, orchestrator, telemetry, dataDir } };
+  return { app, services: { runs, memory, llm, runEvents, orchestrator, telemetry, postgresMirror, dataDir } };
 }

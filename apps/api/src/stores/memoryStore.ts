@@ -6,7 +6,10 @@ export class InMemoryMemoryStore implements MemoryStore {
   private readonly records: MemoryRecord[] = [];
   private readonly persistence?: JsonFileStore<MemoryRecord[]>;
 
-  constructor(filePath?: string) {
+  constructor(
+    filePath?: string,
+    private readonly onSave?: (record: MemoryRecord) => void
+  ) {
     if (!filePath) {
       return;
     }
@@ -24,6 +27,7 @@ export class InMemoryMemoryStore implements MemoryStore {
 
     this.records.unshift(saved);
     this.persist();
+    this.onSave?.(saved);
     return saved;
   }
 
