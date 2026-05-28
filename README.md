@@ -158,3 +158,69 @@ The local app is intentionally small, but the architecture is shaped for product
 - Docker, Kubernetes, GitHub Actions, and ArgoCD can handle deployment and release automation.
 
 The final vision is simple: a human provides an objective; AI-Loop-OS plans, researches, codes, tests, reviews, secures, deploys, monitors, learns, and improves with minimal human intervention.
+
+## Implementation Status Addendum
+
+The current app base now includes more than the initial local mock demo:
+
+- API, UI, gateway, and worker npm workspaces.
+- Workflow-driven loop selection through `GET /api/workflows` and `POST /api/runs`.
+- Server-Sent Events at `GET /api/runs/:id/events` for live run updates.
+- Human approval gates with `POST /api/runs/:id/approve` and `POST /api/runs/:id/reject`.
+- Approval RBAC using `x-operator-role: approver`, `x-operator-id`, and optional `OPERATOR_TOKEN` bearer enforcement.
+- Configurable model providers: mock by default, or OpenAI-compatible HTTP chat completions with environment variables.
+- Local JSON persistence by default, with optional PostgreSQL mirroring when `DATABASE_URL` is configured.
+- Telemetry events at `GET /api/telemetry` and Prometheus-style metrics at `GET /metrics`.
+- Automated API tests using Node's built-in test runner.
+- GitHub Actions CI for install, build, and tests.
+
+## Additional Commands
+
+Run all tests:
+
+```bash
+npm test
+```
+
+Run API, gateway, worker, and UI together:
+
+```bash
+npm run dev:all
+```
+
+Run the gateway only:
+
+```bash
+npm run dev:gateway
+```
+
+Run the worker only:
+
+```bash
+npm run dev:worker
+```
+
+## Environment Configuration
+
+Copy `.env.example` when configuring non-default behavior.
+
+Key settings:
+
+| Variable | Purpose |
+| --- | --- |
+| `DATA_DIR` | Local JSON persistence directory. |
+| `DATABASE_URL` | Optional PostgreSQL mirror for runs and memory records. |
+| `OPERATOR_TOKEN` | Optional bearer token required for approve/reject endpoints. |
+| `LLM_PROVIDER` | `mock` or `openai-compatible`. |
+| `LLM_BASE_URL` | OpenAI-compatible `/v1` base URL. |
+| `LLM_MODEL` | Model name for OpenAI-compatible providers. |
+| `LLM_API_KEY` | API key required when `LLM_PROVIDER=openai-compatible`. |
+
+## Production Gaps That Remain
+
+The app now has production-shaped hooks, but a real deployment still needs externally provisioned services and operational policies:
+
+- A real PostgreSQL instance if `DATABASE_URL` is used.
+- Real model credentials if `LLM_PROVIDER=openai-compatible` is used.
+- Actual Semgrep, Trivy, Ragas, DeepEval, Langfuse, OpenTelemetry collector, Kubernetes, ArgoCD, Neo4j, and Qdrant integrations behind the existing loop/provider boundaries.
+- Stronger identity integration for multi-user deployments, such as Entra ID or another OIDC provider.
