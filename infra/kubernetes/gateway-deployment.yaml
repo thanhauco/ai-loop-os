@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-loop-os-gateway
+  namespace: ai-loop-os
+  labels:
+    app.kubernetes.io/name: ai-loop-os
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-loop-os
+      app.kubernetes.io/component: gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ai-loop-os
+        app.kubernetes.io/component: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: ghcr.io/your-org/ai-loop-os-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4100
+              name: http
+          envFrom:
+            - configMapRef:
+                name: ai-loop-os-config
+          readinessProbe:
+            httpGet:
+              path: /gateway/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /gateway/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

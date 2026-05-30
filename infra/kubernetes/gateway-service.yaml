@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-loop-os-gateway
+  namespace: ai-loop-os
+  labels:
+    app.kubernetes.io/name: ai-loop-os
+    app.kubernetes.io/component: gateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: ai-loop-os
+    app.kubernetes.io/component: gateway
+  ports:
+    - name: http
+      port: 4100
+      targetPort: http
