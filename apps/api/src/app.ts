@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { requireApprover } from "./auth/operatorAuth.js";
 import { RunEventBus } from "./events/runEvents.js";
 import { loopRegistry } from "./loops/registry.js";
+import { openApiDocument } from "./openapi.js";
 import { Orchestrator } from "./orchestrator.js";
 import { PostgresMirror } from "./persistence/postgresMirror.js";
 import { createLlmProvider } from "./providers/providerFactory.js";
@@ -51,6 +52,10 @@ export function createApiApp(options: ApiAppOptions = {}) {
         postgresMirror: Boolean(postgresMirror)
       }
     });
+  });
+
+  app.get("/api/openapi.json", (_request, response) => {
+    response.json(openApiDocument);
   });
 
   app.get("/api/loops", (_request, response) => {

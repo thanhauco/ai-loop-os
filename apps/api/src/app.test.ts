@@ -41,6 +41,13 @@ describe("AI-Loop-OS API", () => {
     assert.ok(response.body.some((workflow: { name: string }) => workflow.name === "build_feature"));
   });
 
+  it("serves the OpenAPI contract", async () => {
+    const response = await agent.get("/api/openapi.json").expect(200);
+    assert.equal(response.body.openapi, "3.1.0");
+    assert.ok(response.body.paths["/api/runs"]);
+    assert.ok(response.body.paths["/api/runs/{id}/approve"]);
+  });
+
   it("uses mock model provider by default", () => {
     assert.equal(createLlmProvider({}).name, "mock-local-loop-model");
   });

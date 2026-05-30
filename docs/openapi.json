@@ -1,0 +1,451 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AI-Loop-OS API",
+    "version": "0.1.0",
+    "description": "Loop-first autonomous software engineering runtime API."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000",
+      "description": "Local API"
+    },
+    {
+      "url": "http://localhost:4100",
+      "description": "Local gateway"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "API health and runtime configuration"
+          }
+        }
+      }
+    },
+    "/api/loops": {
+      "get": {
+        "summary": "List loop metadata",
+        "responses": {
+          "200": {
+            "description": "Loop metadata in execution catalog order"
+          }
+        }
+      }
+    },
+    "/api/workflows": {
+      "get": {
+        "summary": "List workflow templates",
+        "responses": {
+          "200": {
+            "description": "Workflow templates and quality gates"
+          }
+        }
+      }
+    },
+    "/api/runs": {
+      "get": {
+        "summary": "List runs",
+        "responses": {
+          "200": {
+            "description": "Recent runs"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create run",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Run accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid goal or workflow"
+          }
+        }
+      }
+    },
+    "/api/runs/{id}": {
+      "get": {
+        "summary": "Get run",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RunId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Run detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Run not found"
+          }
+        }
+      }
+    },
+    "/api/runs/{id}/events": {
+      "get": {
+        "summary": "Stream run events",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RunId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events stream for run updates",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Run not found"
+          }
+        }
+      }
+    },
+    "/api/runs/{id}/approve": {
+      "post": {
+        "summary": "Approve paused run",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RunId"
+          }
+        ],
+        "security": [
+          {
+            "operatorRole": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Run approved"
+          },
+          "401": {
+            "description": "Operator token required"
+          },
+          "403": {
+            "description": "Approver role required"
+          },
+          "409": {
+            "description": "Run is not pending approval"
+          }
+        }
+      }
+    },
+    "/api/runs/{id}/reject": {
+      "post": {
+        "summary": "Reject paused run",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/RunId"
+          }
+        ],
+        "security": [
+          {
+            "operatorRole": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApprovalDecision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Run rejected"
+          },
+          "401": {
+            "description": "Operator token required"
+          },
+          "403": {
+            "description": "Approver role required"
+          },
+          "409": {
+            "description": "Run is not pending approval"
+          }
+        }
+      }
+    },
+    "/api/memory": {
+      "get": {
+        "summary": "List memory records",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "episodic",
+                "semantic",
+                "procedural"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Memory records"
+          },
+          "400": {
+            "description": "Invalid memory kind"
+          }
+        }
+      }
+    },
+    "/api/telemetry": {
+      "get": {
+        "summary": "List telemetry events",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Telemetry events"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus metrics",
+        "responses": {
+          "200": {
+            "description": "Prometheus text metrics",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/openapi.json": {
+      "get": {
+        "summary": "OpenAPI document",
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.1 contract"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "operatorRole": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-operator-role",
+        "description": "Set to approver. If OPERATOR_TOKEN is configured, also send Authorization: Bearer <token>."
+      }
+    },
+    "parameters": {
+      "RunId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "RunRequest": {
+        "type": "object",
+        "required": [
+          "goal"
+        ],
+        "properties": {
+          "goal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "workflow": {
+            "type": "string",
+            "examples": [
+              "build_feature",
+              "code_review",
+              "release"
+            ]
+          },
+          "compliance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              [
+                "SOC2",
+                "HIPAA"
+              ]
+            ]
+          },
+          "maxRetries": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5,
+            "default": 2
+          }
+        }
+      },
+      "ApprovalDecision": {
+        "type": "object",
+        "properties": {
+          "approvedBy": {
+            "type": "string"
+          },
+          "rejectedBy": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "Run": {
+        "type": "object",
+        "required": [
+          "id",
+          "goal",
+          "status",
+          "workflow",
+          "loops",
+          "artifacts"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "goal": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "awaiting_approval",
+              "succeeded",
+              "failed"
+            ]
+          },
+          "workflow": {
+            "type": "string"
+          },
+          "approval": {
+            "type": "object"
+          },
+          "compliance": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "maxRetries": {
+            "type": "integer"
+          },
+          "loops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoopRecord"
+            }
+          },
+          "artifacts": {
+            "type": "object"
+          },
+          "qualityScore": {
+            "type": "number"
+          }
+        }
+      },
+      "LoopRecord": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "passed",
+              "failed",
+              "skipped"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "output": {
+            "type": "object"
+          },
+          "logs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}
