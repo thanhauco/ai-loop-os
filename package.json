@@ -18,6 +18,7 @@
     "dev:worker": "npm run dev -w @loop-os/worker",
     "build": "npm run build -w @loop-os/api && npm run build -w @loop-os/gateway && npm run build -w @loop-os/ui && npm run build -w @loop-os/worker",
     "test": "npm run test -w @loop-os/api",
+    "security:audit": "npm audit --audit-level=high",
     "docs:openapi": "npm run docs:openapi -w @loop-os/api",
     "start": "npm run start -w @loop-os/api"
   },
